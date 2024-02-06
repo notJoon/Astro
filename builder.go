@@ -1,7 +1,6 @@
 package astro
 
 import (
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -37,7 +36,7 @@ func (n *Node) SetName(name string) {
 }
 
 func (n *Node) String() string {
-    return fmt.Sprintf("(%s)", n.Name)
+	return fmt.Sprintf("(%s)", n.Name)
 }
 
 type Relation string
@@ -62,7 +61,7 @@ func NewEdge(from *Node, to *Node, r Relation) *Edge {
 }
 
 func (e *Edge) String() string {
-    return fmt.Sprintf("%s-[:%s]->%s", e.From, e.Relation, e.To)
+	return fmt.Sprintf("%s-[:%s]->%s", e.From, e.Relation, e.To)
 }
 
 type Graph struct {
@@ -104,7 +103,7 @@ func ExtractGraphFrmAST(src string) (*Graph, error) {
 
 	f, err := parser.ParseFile(fset, "", src, 0)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Error parsing file: %s", err))
+		return nil, fmt.Errorf("Error parsing file: %s", err)
 	}
 
 	graph := NewGraph()

@@ -1,7 +1,6 @@
-package astro_test
+package astro
 
 import (
-	"astro"
 	"testing"
 )
 
@@ -64,7 +63,7 @@ func printMore(msg string) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			graph, err := astro.ExtractGraphFrmAST(tc.src)
+			graph, err := ExtractGraphFrmAST(tc.src)
 			if err != nil {
 				t.Fatalf("Error extracting graph: %s", err)
 			}
@@ -83,36 +82,36 @@ func TestConvertASTtoGraphQuery(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		graph          *astro.Graph
+		graph          *Graph
 		expectedOutput string
 	}{
 		{
 			name: "simple function call",
-			graph: func() *astro.Graph {
-				g := astro.NewGraph()
-				mainNode := astro.NewNode(astro.FuncDecl, "main")
-				printNode := astro.NewNode(astro.FuncDecl, "fmt.Println")
+			graph: func() *Graph {
+				g := NewGraph()
+				mainNode := NewNode(FuncDecl, "main")
+				printNode := NewNode(FuncDecl, "fmt.Println")
 				g.AddNode(mainNode)
 				g.AddNode(printNode)
-				g.AddEdge(mainNode, printNode, astro.Call)
+				g.AddEdge(mainNode, printNode, Call)
 				return g
 			}(),
 			expectedOutput: "(main)-[:Call]->(fmt.Println)\n",
 		},
 		{
 			name: "two function calls",
-			graph: func() *astro.Graph {
-				g := astro.NewGraph()
+			graph: func() *Graph {
+				g := NewGraph()
 
-				mainNode := astro.NewNode(astro.FuncDecl, "main")
-				printNode := astro.NewNode(astro.FuncDecl, "fmt.Println")
-				moreNode := astro.NewNode(astro.FuncDecl, "printMore")
+				mainNode := NewNode(FuncDecl, "main")
+				printNode := NewNode(FuncDecl, "fmt.Println")
+				moreNode := NewNode(FuncDecl, "printMore")
 
 				g.AddNode(mainNode)
 				g.AddNode(printNode)
 				g.AddNode(moreNode)
-				g.AddEdge(mainNode, moreNode, astro.Call)
-				g.AddEdge(moreNode, printNode, astro.Call)
+				g.AddEdge(mainNode, moreNode, Call)
+				g.AddEdge(moreNode, printNode, Call)
 
 				return g
 			}(),
