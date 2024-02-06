@@ -36,6 +36,10 @@ func (n *Node) SetName(name string) {
 	n.Name = name
 }
 
+func (n *Node) String() string {
+    return fmt.Sprintf("(%s)", n.Name)
+}
+
 type Relation string
 
 const (
@@ -45,25 +49,54 @@ const (
 
 type Edge struct {
 	From     *Node
-	to       *Node
+	To       *Node
 	Relation Relation
 }
 
 func NewEdge(from *Node, to *Node, r Relation) *Edge {
 	return &Edge{
 		From:     from,
-		to:       to,
+		To:       to,
 		Relation: r,
 	}
 }
 
+func (e *Edge) String() string {
+    return fmt.Sprintf("%s-[:%s]->%s", e.From, e.Relation, e.To)
+}
+
 type Graph struct {
-	Nodes []*Node
-	Edges []*Edge
+	Nodes   []*Node
+	Edges   []*Edge
+	NodeMap map[string]*Node
 }
 
 func NewGraph() *Graph {
-	return &Graph{}
+	return &Graph{
+		NodeMap: make(map[string]*Node),
+	}
+}
+
+func (g *Graph) AddNode(node *Node) {
+	if _, exists := g.NodeMap[node.Name]; !exists {
+		g.Nodes = append(g.Nodes, node)
+		g.NodeMap[node.Name] = node
+	}
+}
+
+func (g *Graph) AddEdge(from, to *Node, relation Relation) {
+	edge := NewEdge(from, to, relation)
+	g.Edges = append(g.Edges, edge)
+}
+
+func (g *Graph) String() string {
+	var builder strings.Builder
+
+	for _, edge := range g.Edges {
+		builder.WriteString(edge.String() + "\n")
+	}
+
+	return builder.String()
 }
 
 func ExtractGraphFrmAST(src string) (*Graph, error) {
@@ -106,30 +139,28 @@ func ExtractGraphFrmAST(src string) (*Graph, error) {
 func processCall(x *ast.CallExpr, graph *Graph, currentFunc *Node) error {
 	var funcName string
 
-    switch call := x.Fun.(type) {
-    case *ast.Ident:
-        funcName = call.Name
-    case *ast.SelectorExpr:
-        // handle method or package-level function calls
-        funcName = fmt.Sprintf("%s.%s", call.X, call.Sel)
-
-        // find the node of the called function
-        var callFunc *Node
-        for _, node := range graph.Nodes {
-            if node.Name == strings.TrimPrefix(funcName, "*") && node.Type == FuncDecl {
-                callFunc = node
-                break
-            }
-        }
-
-        // create edge and add it to graph
-        if callFunc != nil {
-            edge := NewEdge(currentFunc, callFunc, Call)
-            graph.Edges = append(graph.Edges, edge)
-        }
+	switch call := x.Fun.(type) {
+	case *ast.Ident:
+		funcName = call.Name
+	case *ast.SelectorExpr:
+		// handle method or package-level function calls
+		if ident, ok := call.X.(*ast.Ident); ok {
+			funcName = fmt.Sprintf("%s.%s", ident.Name, call.Sel.Name)
+		} else {
+			return fmt.Errorf("unhandled call type: %T", call.X)
+		}
 	default:
-		return errors.New("Unknown call type")
-    }
+		return fmt.Errorf("unknown call type: %T", x.Fun)
+	}
+
+	callFunc, exists := graph.NodeMap[funcName]
+	if !exists {
+		callFunc = NewNode(FuncDecl, funcName)
+		graph.AddNode(callFunc)
+	}
+
+	// Create an edge from the current function to the called function
+	graph.AddEdge(currentFunc, callFunc, Call)
 
 	return nil
 }
