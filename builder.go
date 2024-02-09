@@ -27,16 +27,49 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 		switch x := n.(type) {
 		case *ast.FuncDecl:
 			// create function node and add it to graph
-			funcNode := NewNode(FuncDecl, x.Name.Name)
+			funcNode := NewNode(Func, x.Name.Name)
 			graph.Nodes = append(graph.Nodes, funcNode)
 
 			// set current function
 			currentFunc = funcNode
 
+		case *ast.GenDecl:
+			// variable declaration
+			if x.Tok == token.VAR {
+				for _, spec := range x.Specs {
+					if vs, ok := spec.(*ast.ValueSpec); ok {
+						for _, name := range vs.Names {
+							varNode := NewNode(Var, name.Name)
+							graph.Nodes = append(graph.Nodes, varNode)
+
+							graph.AddEdge(currentFunc, varNode, Declares)
+						}
+					}
+				}
+			}
+
+		case *ast.Ident:
+			if currentFunc != nil && x.Obj != nil && x.Obj.Kind == ast.Var {
+				// check for variable usage in the current function
+				varNode, exists := graph.NodeMap[x.Name]
+				if exists {
+					graph.AddEdge(currentFunc, varNode, Uses)
+				}
+			}
+
 		case *ast.CallExpr:
-			err := processCall(x, graph, currentFunc)
-			if err != nil {
+			if err := processCall(x, graph, currentFunc); err != nil {
 				return false
+			}
+
+			// handling variables passed as parameters in function calls
+			for _, arg := range x.Args {
+				if ident, ok := arg.(*ast.Ident); ok && ident.Obj != nil && ident.Obj.Kind == ast.Var {
+					varNode, exists := graph.NodeMap[ident.Name]
+					if exists {
+						graph.AddEdge(varNode, currentFunc, PassesTo)
+					}
+				}
 			}
 
 		default:
@@ -70,7 +103,7 @@ func processCall(x *ast.CallExpr, graph *Graph, currentFunc *Node) error {
 
 	callFunc, exists := graph.NodeMap[funcName]
 	if !exists {
-		callFunc = NewNode(FuncDecl, funcName)
+		callFunc = NewNode(Func, funcName)
 		graph.AddNode(callFunc)
 	}
 

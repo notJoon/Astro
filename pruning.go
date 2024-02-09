@@ -12,7 +12,7 @@ func MultiPathPruning(graph *Graph, startNode *Node, goal func(n *Node) bool) ([
 
 	for len(frontier) > 0 {
 		path, node := exploreNode(&frontier, explored)
-		
+
 		if goal(node) {
 			return path, true
 		}
@@ -26,8 +26,8 @@ func MultiPathPruning(graph *Graph, startNode *Node, goal func(n *Node) bool) ([
 // initialize performs the initial setup to start the search.
 func initialize(start *Node) ([][]*Node, map[*Node]bool, map[*Node][]*Node) {
 	frontier := [][]*Node{{start}}
-	explored := make(map[*Node]bool)
-	visited := make(map[*Node][]*Node)
+	explored := make(map[*Node]bool)	// for memoization
+	visited := make(map[*Node][]*Node)	// for memoization
 
 	return frontier, explored, visited
 }

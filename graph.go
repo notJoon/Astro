@@ -9,8 +9,9 @@ import (
 type NodeType string
 
 const (
-	FuncDecl NodeType = "Function"
-	Unknown  NodeType = "Unknown"
+	Func    NodeType = "Function"
+	Var     NodeType = "Variable"
+	Unknown NodeType = "Unknown"
 )
 
 // Node holds the information of a AST node in the graph.
@@ -49,7 +50,10 @@ func (n *Node) String() string {
 type Relation string
 
 const (
-	Call            Relation = "Call"
+	Call            Relation = "Call"	  	// function call
+	Declares        Relation = "Declares"	// variable declaration
+	Uses            Relation = "Uses"	  	// variable usage
+	PassesTo		Relation = "PassesTo" 	// variables passed as function parameters
 	UnknownRelation Relation = "Unknown"
 )
 
@@ -97,11 +101,24 @@ func (g *Graph) AddEdge(from, to *Node, relation Relation) {
 }
 
 func (g *Graph) String() string {
-	var builder strings.Builder
+    var builder strings.Builder
 
-	for _, edge := range g.Edges {
-		builder.WriteString(edge.String() + "\n")
-	}
+	l := len(g.Edges)
 
-	return builder.String()
+    switch l {
+    case 0:
+        builder.WriteString("Empty graph")
+    case 1:
+        builder.WriteString(g.Edges[0].String())
+    default:
+        for i, edge := range g.Edges {
+            if i != l-1 {
+                builder.WriteString(edge.String() + "\n")
+            } else {
+                builder.WriteString(edge.String())
+            }
+        }
+    }
+
+    return builder.String()
 }

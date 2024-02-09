@@ -56,8 +56,73 @@ func printMore(msg string) {
 	println(msg)
 }
 `,
-			expectedNodeCount: 4, // main, printMore, println
+			expectedNodeCount: 4,
 			expectedEdgeCount: 2, // main -> printMore, printMore -> println
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			graph, err := ExtractGraphFromAST(tc.src)
+			if err != nil {
+				t.Fatalf("Error extracting graph: %s", err)
+			}
+			if len(graph.Nodes) != tc.expectedNodeCount {
+				t.Errorf("Expected %d nodes, got %d", tc.expectedNodeCount, len(graph.Nodes))
+			}
+			if len(graph.Edges) != tc.expectedEdgeCount {
+				t.Errorf("Expected %d edges, got %d", tc.expectedEdgeCount, len(graph.Edges))
+			}
+		})
+	}
+}
+
+func TestExtractGraphFromAST_Variable(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		src               string
+		expectedNodeCount int
+		expectedEdgeCount int
+	}{
+		{
+			name: "variable declaration and usage",
+			src: `
+package main
+func main() {
+	var x int
+	x = 5
+	println(x)
+}`,
+			expectedNodeCount: 3, // main, x, println
+			expectedEdgeCount: 2, // main -> x (Declares), main -> x (Uses)
+		},
+		{
+			name: "variable passed to function",
+			src: `
+package main
+func main() {
+	var message string = "hello"
+	print(message)
+}
+func print(msg string) {
+	println(msg)
+}`,
+			expectedNodeCount: 5, // main, message, print, msg, println
+			expectedEdgeCount: 3, // main -> message (Declares), main -> print (Calls), print -> msg (PassesTo)
+		},
+		{
+			name: "global variable usage",
+			src: `
+package main
+var globalVar int
+func main() {
+	globalVar = 10
+	println(globalVar)
+}`,
+			expectedNodeCount: 3, // globalVar, main, println
+			expectedEdgeCount: 2, // main -> globalVar (Uses), main -> globalVar (Declares)
 		},
 	}
 
@@ -89,23 +154,23 @@ func TestConvertASTtoGraphQuery(t *testing.T) {
 			name: "simple function call",
 			graph: func() *Graph {
 				g := NewGraph()
-				mainNode := NewNode(FuncDecl, "main")
-				printNode := NewNode(FuncDecl, "fmt.Println")
+				mainNode := NewNode(Func, "main")
+				printNode := NewNode(Func, "fmt.Println")
 				g.AddNode(mainNode)
 				g.AddNode(printNode)
 				g.AddEdge(mainNode, printNode, Call)
 				return g
 			}(),
-			expectedOutput: "(main)-[:Call]->(fmt.Println)\n",
+			expectedOutput: "(main)-[:Call]->(fmt.Println)",
 		},
 		{
 			name: "two function calls",
 			graph: func() *Graph {
 				g := NewGraph()
 
-				mainNode := NewNode(FuncDecl, "main")
-				printNode := NewNode(FuncDecl, "fmt.Println")
-				moreNode := NewNode(FuncDecl, "printMore")
+				mainNode := NewNode(Func, "main")
+				printNode := NewNode(Func, "fmt.Println")
+				moreNode := NewNode(Func, "printMore")
 
 				g.AddNode(mainNode)
 				g.AddNode(printNode)
@@ -115,7 +180,7 @@ func TestConvertASTtoGraphQuery(t *testing.T) {
 
 				return g
 			}(),
-			expectedOutput: "(main)-[:Call]->(printMore)\n(printMore)-[:Call]->(fmt.Println)\n",
+			expectedOutput: "(main)-[:Call]->(printMore)\n(printMore)-[:Call]->(fmt.Println)",
 		},
 	}
 
