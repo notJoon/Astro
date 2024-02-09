@@ -49,13 +49,7 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 			}
 
 		case *ast.Ident:
-			if currentFunc != nil && x.Obj != nil && x.Obj.Kind == ast.Var {
-				// check for variable usage in the current function
-				varNode, exists := graph.NodeMap[x.Name]
-				if exists {
-					graph.AddEdge(currentFunc, varNode, Uses)
-				}
-			}
+			checkVarUsage(currentFunc, graph, x)
 
 		case *ast.CallExpr:
 			if err := processCall(x, graph, currentFunc); err != nil {
@@ -64,11 +58,8 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 
 			// handling variables passed as parameters in function calls
 			for _, arg := range x.Args {
-				if ident, ok := arg.(*ast.Ident); ok && ident.Obj != nil && ident.Obj.Kind == ast.Var {
-					varNode, exists := graph.NodeMap[ident.Name]
-					if exists {
-						graph.AddEdge(varNode, currentFunc, PassesTo)
-					}
+				if ident, ok := arg.(*ast.Ident); ok {
+					checkVarUsage(currentFunc, graph, ident)
 				}
 			}
 
@@ -80,6 +71,16 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 	})
 
 	return graph, nil
+}
+
+func checkVarUsage(currFunc *Node, graph *Graph, ident *ast.Ident) {
+	if ident.Obj != nil && ident.Obj.Kind == ast.Var {
+		// check for variable usage in the current function
+		varNode, exists := graph.NodeMap[ident.Name]
+		if exists {
+			graph.AddEdge(currFunc, varNode, Uses)
+		}
+	}
 }
 
 // processCall extracts node information from the generated AST and

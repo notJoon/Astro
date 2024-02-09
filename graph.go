@@ -2,7 +2,6 @@ package astro
 
 import (
 	"fmt"
-	"strings"
 )
 
 // NodeType represents the type of a AST node in the graph
@@ -98,27 +97,4 @@ func (g *Graph) AddNode(node *Node) {
 func (g *Graph) AddEdge(from, to *Node, relation Relation) {
 	edge := NewEdge(from, to, relation)
 	g.Edges = append(g.Edges, edge)
-}
-
-func (g *Graph) String() string {
-    var builder strings.Builder
-
-	l := len(g.Edges)
-
-    switch l {
-    case 0:
-        builder.WriteString("Empty graph")
-    case 1:
-        builder.WriteString(g.Edges[0].String())
-    default:
-        for i, edge := range g.Edges {
-            if i != l-1 {
-                builder.WriteString(edge.String() + "\n")
-            } else {
-                builder.WriteString(edge.String())
-            }
-        }
-    }
-
-    return builder.String()
 }
