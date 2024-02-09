@@ -63,7 +63,7 @@ func printMore(msg string) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			graph, err := ExtractGraphFrmAST(tc.src)
+			graph, err := ExtractGraphFromAST(tc.src)
 			if err != nil {
 				t.Fatalf("Error extracting graph: %s", err)
 			}

@@ -5,100 +5,14 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"strings"
 )
 
-type NodeType string
-
-const (
-	FuncDecl NodeType = "Function"
-	Unknown  NodeType = "Unknown"
-)
-
-type Node struct {
-	Type NodeType
-	Name string
-}
-
-func NewNode(t NodeType, name string) *Node {
-	return &Node{
-		Type: t,
-		Name: name,
-	}
-}
-
-func (n *Node) SetType(t NodeType) {
-	n.Type = t
-}
-
-func (n *Node) SetName(name string) {
-	n.Name = name
-}
-
-func (n *Node) String() string {
-	return fmt.Sprintf("(%s)", n.Name)
-}
-
-type Relation string
-
-const (
-	Call            Relation = "Call"
-	UnknownRelation Relation = "Unknown"
-)
-
-type Edge struct {
-	From     *Node
-	To       *Node
-	Relation Relation
-}
-
-func NewEdge(from *Node, to *Node, r Relation) *Edge {
-	return &Edge{
-		From:     from,
-		To:       to,
-		Relation: r,
-	}
-}
-
-func (e *Edge) String() string {
-	return fmt.Sprintf("%s-[:%s]->%s", e.From, e.Relation, e.To)
-}
-
-type Graph struct {
-	Nodes   []*Node
-	Edges   []*Edge
-	NodeMap map[string]*Node
-}
-
-func NewGraph() *Graph {
-	return &Graph{
-		NodeMap: make(map[string]*Node),
-	}
-}
-
-func (g *Graph) AddNode(node *Node) {
-	if _, exists := g.NodeMap[node.Name]; !exists {
-		g.Nodes = append(g.Nodes, node)
-		g.NodeMap[node.Name] = node
-	}
-}
-
-func (g *Graph) AddEdge(from, to *Node, relation Relation) {
-	edge := NewEdge(from, to, relation)
-	g.Edges = append(g.Edges, edge)
-}
-
-func (g *Graph) String() string {
-	var builder strings.Builder
-
-	for _, edge := range g.Edges {
-		builder.WriteString(edge.String() + "\n")
-	}
-
-	return builder.String()
-}
-
-func ExtractGraphFrmAST(src string) (*Graph, error) {
+// ExtractGraphFromAST extracts a graph from the given source code (go file).
+//
+// It utilizes the go/ast package to parse the source code and build the graph.
+//
+// Consideration: use a treesitter parser instead of go/ast to support more languages than just Go
+func ExtractGraphFromAST(src string) (*Graph, error) {
 	fset := token.NewFileSet()
 
 	f, err := parser.ParseFile(fset, "", src, 0)
@@ -135,6 +49,8 @@ func ExtractGraphFrmAST(src string) (*Graph, error) {
 	return graph, nil
 }
 
+// processCall extracts node information from the generated AST and
+// and converts it into a graph structure.
 func processCall(x *ast.CallExpr, graph *Graph, currentFunc *Node) error {
 	var funcName string
 
