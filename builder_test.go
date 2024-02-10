@@ -4,15 +4,18 @@ import (
 	"testing"
 )
 
+type testCases struct {
+	name              string
+	src               string
+	expectedNodeCount int
+	expectedEdgeCount int
+	expectError       bool
+}
+
 func TestExtractGraphFromAST(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name              string
-		src               string
-		expectedNodeCount int
-		expectedEdgeCount int
-	}{
+	tests := []testCases{
 		{
 			name: "only main function",
 			src: `
@@ -80,12 +83,7 @@ func printMore(msg string) {
 func TestExtractGraphFromAST_Variable(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name              string
-		src               string
-		expectedNodeCount int
-		expectedEdgeCount int
-	}{
+	tests := []testCases{
 		{
 			name: "variable declaration and usage",
 			src: `
@@ -123,6 +121,15 @@ func main() {
 }`,
 			expectedNodeCount: 3, // globalVar, main, println
 			expectedEdgeCount: 2, // main -> globalVar (Uses), main -> globalVar (Declares)
+		},
+		{
+			name: "No main, only variable declaration",
+			src: `
+package main
+var x int
+`,
+			expectedNodeCount: 1, // x
+			expectedEdgeCount: 1, // main -> x (Declares)
 		},
 	}
 

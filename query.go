@@ -6,12 +6,12 @@ import (
 )
 
 type QueryBuilder interface {
-	BuildQuery() 	string
+	BuildQuery() string
 	ApplyAbstract() string
 }
 
 type ConcreteQueryBuilder struct {
-	Graph 	*Graph
+	Graph *Graph
 }
 
 func (q *ConcreteQueryBuilder) BuildQuery() string {
