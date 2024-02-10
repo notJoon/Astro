@@ -2,6 +2,8 @@ package astro
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 )
 
 // NodeType represents the type of a AST node in the graph
@@ -49,10 +51,10 @@ func (n *Node) String() string {
 type Relation string
 
 const (
-	Call            Relation = "Call"	  	// function call
-	Declares        Relation = "Declares"	// variable declaration
-	Uses            Relation = "Uses"	  	// variable usage
-	PassesTo		Relation = "PassesTo" 	// variables passed as function parameters
+	Call            Relation = "Call"     // function call
+	Declares        Relation = "Declares" // variable declaration
+	Uses            Relation = "Uses"     // variable usage
+	PassesTo        Relation = "PassesTo" // variables passed as function parameters
 	UnknownRelation Relation = "Unknown"
 )
 
@@ -97,4 +99,69 @@ func (g *Graph) AddNode(node *Node) {
 func (g *Graph) AddEdge(from, to *Node, relation Relation) {
 	edge := NewEdge(from, to, relation)
 	g.Edges = append(g.Edges, edge)
+}
+
+// DegreeSequence computes and returns a sorted slice of degree sequence of a given graph.
+//
+// The degree of a node is defined as the number of edges connected to it. The degree sequence
+// is a way to summarize the connectivity pattern of the graph.
+//
+// It can be used among other things, for graph comaprison, where two graphs with the same
+// degree sequence might have similar structures.
+func (g *Graph) DegreeSequence() []int {
+	dmap := make(map[string]int)
+
+	for _, edge := range g.Edges {
+		dmap[edge.From.Name]++
+		dmap[edge.To.Name]++
+	}
+
+	sequence := make([]int, 0, len(dmap))
+	for _, degree := range dmap {
+		sequence = append(sequence, degree)
+	}
+
+	sort.Ints(sequence)
+
+	return sequence
+}
+
+// IsIsomorphic checks if two graphs, g1 and g2, are isomorphic.
+//
+// Two graphs are considered isomorphic if they contain the same number of nodes and edges,
+// and if the nodes can be matched one-to-one based on their NodeType, such that the edges
+// also have a one-to-one correspondence in their Relation types between the graph .
+//
+// This function does not consider the names of the nodes but only their types and the relationships (edges).
+//
+// TODO: should reduce complexity
+func IsIsomorphic(g1, g2 *Graph) bool {
+	isSameLen := len(g1.Nodes) != len(g2.Nodes)
+	isSameEdgeLen := len(g1.Edges) != len(g2.Edges)
+
+	if isSameLen || isSameEdgeLen {
+		return false
+	}
+
+	nodeTypeCount1 := make(map[NodeType]int)
+	nodeTypeCount2 := make(map[NodeType]int)
+	for _, node := range g1.Nodes {
+		nodeTypeCount1[node.Type]++
+	}
+	for _, node := range g2.Nodes {
+		nodeTypeCount2[node.Type]++
+	}
+	if !reflect.DeepEqual(nodeTypeCount1, nodeTypeCount2) {
+		return false
+	}
+
+	edgeRelationCount1 := make(map[Relation]int)
+	edgeRelationCount2 := make(map[Relation]int)
+	for _, edge := range g1.Edges {
+		edgeRelationCount1[edge.Relation]++
+	}
+	for _, edge := range g2.Edges {
+		edgeRelationCount2[edge.Relation]++
+	}
+	return reflect.DeepEqual(edgeRelationCount1, edgeRelationCount2)
 }
