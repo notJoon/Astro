@@ -2,6 +2,7 @@ package astro
 
 import (
 	"fmt"
+	"go/ast"
 	"reflect"
 	"sort"
 )
@@ -55,6 +56,7 @@ const (
 	Declares        Relation = "Declares" // variable declaration
 	Uses            Relation = "Uses"     // variable usage
 	PassesTo        Relation = "PassesTo" // variables passed as function parameters
+	Return 			Relation = "Return"   // function return
 	UnknownRelation Relation = "Unknown"
 )
 
@@ -101,6 +103,20 @@ func (g *Graph) AddEdge(from, to *Node, relation Relation) {
 	g.Edges = append(g.Edges, edge)
 }
 
+func (g *Graph) hasReturn(x *ast.FuncType, currNode *Node) *Graph {
+	if x.Results != nil {
+		for _, result := range x.Results.List {
+			for _, typeName := range result.Names {
+				varNode := NewNode(Var, typeName.Name)
+				g.Nodes = append(g.Nodes, varNode)
+				g.AddEdge(currNode, varNode, Return)
+			}
+		}
+	}
+
+	return g
+}
+
 // DegreeSequence computes and returns a sorted slice of degree sequence of a given graph.
 //
 // The degree of a node is defined as the number of edges connected to it. The degree sequence
@@ -145,23 +161,29 @@ func IsIsomorphic(g1, g2 *Graph) bool {
 
 	nodeTypeCount1 := make(map[NodeType]int)
 	nodeTypeCount2 := make(map[NodeType]int)
+
 	for _, node := range g1.Nodes {
 		nodeTypeCount1[node.Type]++
 	}
+
 	for _, node := range g2.Nodes {
 		nodeTypeCount2[node.Type]++
 	}
+
 	if !reflect.DeepEqual(nodeTypeCount1, nodeTypeCount2) {
 		return false
 	}
 
 	edgeRelationCount1 := make(map[Relation]int)
 	edgeRelationCount2 := make(map[Relation]int)
+
 	for _, edge := range g1.Edges {
 		edgeRelationCount1[edge.Relation]++
 	}
+
 	for _, edge := range g2.Edges {
 		edgeRelationCount2[edge.Relation]++
 	}
+
 	return reflect.DeepEqual(edgeRelationCount1, edgeRelationCount2)
 }

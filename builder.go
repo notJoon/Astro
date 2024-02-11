@@ -17,7 +17,7 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 
 	f, err := parser.ParseFile(fset, "", src, 0)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing file: %s", err)
+		return nil, fmt.Errorf("error parsing file: %s", err)
 	}
 
 	graph := NewGraph()
@@ -32,6 +32,9 @@ func ExtractGraphFromAST(src string) (*Graph, error) {
 
 			// set current function
 			currentFunc = funcNode
+
+			// TODO: handle return values
+			graph = graph.hasReturn(x.Type, currentFunc)
 
 		case *ast.GenDecl:
 			// variable declaration

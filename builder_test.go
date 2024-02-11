@@ -1,6 +1,7 @@
 package astro
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -9,7 +10,6 @@ type testCases struct {
 	src               string
 	expectedNodeCount int
 	expectedEdgeCount int
-	expectError       bool
 }
 
 func TestExtractGraphFromAST(t *testing.T) {
@@ -62,6 +62,43 @@ func printMore(msg string) {
 			expectedNodeCount: 4,
 			expectedEdgeCount: 2, // main -> printMore, printMore -> println
 		},
+		{
+			name: "only main function",
+			src: `
+package main
+func main() {
+}`,
+			expectedNodeCount: 1, // main
+			expectedEdgeCount: 0,
+		},
+		{
+			name: "main and println",
+			src: `
+package main
+import "fmt"
+func main() {
+	fmt.Println("Hello, World!")
+}`,
+			expectedNodeCount: 2, // main, fmt.Println
+			expectedEdgeCount: 1, // main -> fmt.Println
+		},
+		{
+			name: "function with return value",
+			src: `
+package main
+
+func getString() string {
+	return "Hello, World!"
+}
+
+func main() {
+	str := getString()
+	println(str)
+}
+`,
+			expectedNodeCount: 4, // main, getString, str, println
+			expectedEdgeCount: 2, // main -> getString, getString -> "Hello, World!"
+		},
 	}
 
 	for _, tc := range tests {
@@ -74,6 +111,7 @@ func printMore(msg string) {
 				t.Errorf("Expected %d nodes, got %d", tc.expectedNodeCount, len(graph.Nodes))
 			}
 			if len(graph.Edges) != tc.expectedEdgeCount {
+				fmt.Println(graph.Edges)
 				t.Errorf("Expected %d edges, got %d", tc.expectedEdgeCount, len(graph.Edges))
 			}
 		})
